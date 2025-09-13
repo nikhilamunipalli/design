@@ -1,0 +1,29 @@
+# Cursor Rules for Design Project
+
+## Color Palette
+- **ONLY** use these colors in the design:
+  - Red (#FF0000, #DC3545, #C82333, #B02A37)
+  - Blue (#0000FF, #007BFF, #0056B3, #004085)
+  - Black (#000000, #212529, #343A40, #495057)
+
+## Spacing & Layout
+- **Wide margins**: Use generous margins throughout the design
+  - Minimum 2rem (32px) for small screens
+  - Minimum 3rem (48px) for medium screens  
+  - Minimum 4rem (64px) for large screens
+- Apply wide margins to:
+  - Container padding
+  - Widget spacing
+  - Section separations
+  - Content areas
+
+## Design Principles
+- Maintain clean, spacious layouts with ample white space
+- Use the restricted color palette consistently
+- Ensure all elements have proper breathing room
+- Prioritize readability through generous spacing
+
+## Implementation Notes
+- When creating or modifying HTML/CSS files, strictly adhere to the color restrictions
+- Always apply wide margins as the default spacing approach
+- Test designs on multiple screen sizes to ensure margin consistency

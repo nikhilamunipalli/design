@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einstein for Service - Unified Analytics Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #212529;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #007BFF 0%, #0056B3 100%);
+            color: white;
+            padding: 2rem 4rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .header p {
+            opacity: 0.9;
+            margin-top: 0.5rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 4rem;
+        }
+
+        .controls {
+            background: white;
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 4rem;
+            display: flex;
+            gap: 3rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        .control-group select, .control-group input {
+            padding: 0.75rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .control-group select:focus, .control-group input:focus {
+            outline: none;
+            border-color: #007BFF;
+        }
+
+        .export-btn {
+            background: #DC3545;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+            margin-left: auto;
+        }
+
+        .export-btn:hover {
+            background: #C82333;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .widget {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .widget:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .widget-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid #f1f3f4;
+        }
+
+        .widget-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #212529;
+        }
+
+        .widget-subtitle {
+            font-size: 0.9rem;
+            color: #495057;
+            margin-top: 0.25rem;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            text-align: center;
+            padding: 1.5rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007BFF;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #212529;
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: #495057;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 1.5rem;
+        }
+
+        .quality-breakdown {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .quality-item {
+            text-align: center;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 2px solid #e1e5e9;
+        }
+
+        .quality-item.sent-as-is {
+            border-color: #007BFF;
+            background: #f8f9ff;
+        }
+
+        .quality-item.modified {
+            border-color: #0000FF;
+            background: #f0f0ff;
+        }
+
+        .quality-item.overwritten {
+            border-color: #DC3545;
+            background: #fff8f8;
+        }
+
+        .quality-percentage {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .quality-label {
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        .kpi-comparison {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .kpi-item {
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .kpi-item.with-product {
+            background: #f0f8ff;
+            border: 2px solid #007BFF;
+        }
+
+        .kpi-item.without-product {
+            background: #f8f9fa;
+            border: 2px solid #495057;
+        }
+
+        .kpi-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-label {
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        .trend-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+
+        .trend-up {
+            color: #007BFF;
+        }
+
+        .trend-down {
+            color: #DC3545;
+        }
+
+        .last-updated {
+            font-size: 0.8rem;
+            color: #495057;
+            text-align: right;
+            margin-top: 1.5rem;
+            font-style: italic;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-tab {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid #e1e5e9;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .filter-tab.active {
+            background: #007BFF;
+            color: white;
+            border-color: #007BFF;
+        }
+
+        .filter-tab:hover:not(.active) {
+            border-color: #007BFF;
+            color: #007BFF;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 2rem;
+            }
+            
+            .controls {
+                padding: 2rem;
+                gap: 2rem;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .export-btn {
+                margin-left: 0;
+                margin-top: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Einstein for Service - Unified Analytics</h1>
+        <p>Real-time insights into CSR usage of Einstein for Service products and service KPIs</p>
+    </div>
+
+    <div class="container">
+        <!-- Controls Section -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="timeRange">Time Range</label>
+                <select id="timeRange">
+                    <option value="7d">Last 7 days</option>
+                    <option value="30d" selected>Last 30 days</option>
+                    <option value="90d">Last 90 days</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="caseType">Case Type</label>
+                <select id="caseType">
+                    <option value="all">All Cases</option>
+                    <option value="support">Support</option>
+                    <option value="billing">Billing</option>
+                    <option value="technical">Technical</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="teamFilter">Team</label>
+                <select id="teamFilter">
+                    <option value="all">All Teams</option>
+                    <option value="tier1">Tier 1</option>
+                    <option value="tier2">Tier 2</option>
+                    <option value="specialist">Specialist</option>
+                </select>
+            </div>
+            <button class="export-btn" onclick="exportData()">Export Data</button>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Service Replies Usage Widget -->
+            <div class="widget">
+                <div class="widget-header">
+                    <div>
+                        <div class="widget-title">Service Replies Usage</div>
+                        <div class="widget-subtitle">Product adoption and activity tracking</div>
+                    </div>
+                </div>
+                
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">2,847</div>
+                        <div class="metric-label">Total Generated</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">2,234</div>
+                        <div class="metric-label">Sent by CSRs</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">78.4%</div>
+                        <div class="metric-label">Adoption Rate</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="serviceRepliesChart"></canvas>
+                </div>
+                <div class="last-updated">Last updated: 2 minutes ago</div>
+            </div>
+
+            <!-- Work Summaries Usage Widget -->
+            <div class="widget">
+                <div class="widget-header">
+                    <div>
+                        <div class="widget-title">Work Summaries Usage</div>
+                        <div class="widget-subtitle">Summary generation and adoption tracking</div>
+                    </div>
+                </div>
+                
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">1,923</div>
+                        <div class="metric-label">Total Generated</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">1,456</div>
+                        <div class="metric-label">Saved by CSRs</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">75.7%</div>
+                        <div class="metric-label">Adoption Rate</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="workSummariesChart"></canvas>
+                </div>
+                <div class="last-updated">Last updated: 2 minutes ago</div>
+            </div>
+
+            <!-- Service Replies Quality Widget -->
+            <div class="widget">
+                <div class="widget-header">
+                    <div>
+                        <div class="widget-title">Service Replies Quality</div>
+                        <div class="widget-subtitle">Response modification and usage patterns</div>
+                    </div>
+                </div>
+                
+                <div class="quality-breakdown">
+                    <div class="quality-item sent-as-is">
+                        <div class="quality-percentage">45.2%</div>
+                        <div class="quality-label">Sent As-Is</div>
+                        <div class="trend-indicator trend-up">↗ +2.1%</div>
+                    </div>
+                    <div class="quality-item modified">
+                        <div class="quality-percentage">33.1%</div>
+                        <div class="quality-label">Modified</div>
+                        <div class="trend-indicator trend-down">↘ -1.3%</div>
+                    </div>
+                    <div class="quality-item overwritten">
+                        <div class="quality-percentage">21.7%</div>
+                        <div class="quality-label">Overwritten</div>
+                        <div class="trend-indicator trend-down">↘ -0.8%</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="serviceRepliesQualityChart"></canvas>
+                </div>
+                <div class="last-updated">Last updated: 2 minutes ago</div>
+            </div>
+
+            <!-- Work Summaries Quality Widget -->
+            <div class="widget">
+                <div class="widget-header">
+                    <div>
+                        <div class="widget-title">Work Summaries Quality</div>
+                        <div class="widget-subtitle">Summary modification and usage patterns</div>
+                    </div>
+                </div>
+                
+                <div class="quality-breakdown">
+                    <div class="quality-item sent-as-is">
+                        <div class="quality-percentage">52.8%</div>
+                        <div class="quality-label">Saved As-Is</div>
+                        <div class="trend-indicator trend-up">↗ +3.2%</div>
+                    </div>
+                    <div class="quality-item modified">
+                        <div class="quality-percentage">28.4%</div>
+                        <div class="quality-label">Modified</div>
+                        <div class="trend-indicator trend-down">↘ -1.1%</div>
+                    </div>
+                    <div class="quality-item overwritten">
+                        <div class="quality-percentage">18.8%</div>
+                        <div class="quality-label">Overwritten</div>
+                        <div class="trend-indicator trend-down">↘ -2.1%</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="workSummariesQualityChart"></canvas>
+                </div>
+                <div class="last-updated">Last updated: 2 minutes ago</div>
+            </div>
+
+            <!-- AHT Impact - Service Replies Widget -->
+            <div class="widget">
+                <div class="widget-header">
+                    <div>
+                        <div class="widget-title">AHT Impact - Service Replies</div>
+                        <div class="widget-subtitle">Average Handle Time comparison</div>
+                    </div>
+                </div>
+                
+                <div class="kpi-comparison">
+                    <div class="kpi-item with-product">
+                        <div class="kpi-value">4.2 min</div>
+                        <div class="kpi-label">With Service Replies</div>
+                        <div class="trend-indicator trend-up">↗ -12% vs baseline</div>
+                    </div>
+                    <div class="kpi-item without-product">
+                        <div class="kpi-value">6.8 min</div>
+                        <div class="kpi-label">Without Service Replies</div>
+                        <div class="trend-indicator trend-down">↘ +3% vs baseline</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="ahtServiceRepliesChart"></canvas>
+                </div>
+                <div class="last-updated">Last updated: 2 minutes ago</div>
+            </div>
+
+            <!-- AHT Impact - Work Summaries Widget -->
+            <div class="widget">
+                <div class="widget-header">
+                    <div>
+                        <div class="widget-title">AHT Impact - Work Summaries</div>
+                        <div class="widget-subtitle">Average Handle Time comparison</div>
+                    </div>
+                </div>
+                
+                <div class="kpi-comparison">
+                    <div class="kpi-item with-product">
+                        <div class="kpi-value">3.9 min</div>
+                        <div class="kpi-label">With Work Summaries</div>
+                        <div class="trend-indicator trend-up">↗ -18% vs baseline</div>
+                    </div>
+                    <div class="kpi-item without-product">
+                        <div class="kpi-value">6.2 min</div>
+                        <div class="kpi-label">Without Work Summaries</div>
+                        <div class="trend-indicator trend-down">↘ +2% vs baseline</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="ahtWorkSummariesChart"></canvas>
+                </div>
+                <div class="last-updated">Last updated: 2 minutes ago</div>
+            </div>
+
+            <!-- ESAT - Service Replies Widget -->
+            <div class="widget">
+                <div class="widget-header">
+                    <div>
+                        <div class="widget-title">CSR Satisfaction - Service Replies</div>
+                        <div class="widget-subtitle">eSAT scores and feedback analysis</div>
+                    </div>
+                </div>
+                
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">87.3%</div>
+                        <div class="metric-label">Positive Feedback</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">12.7%</div>
+                        <div class="metric-label">Negative Feedback</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">4.2</div>
+                        <div class="metric-label">Avg Rating</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="esatServiceRepliesChart"></canvas>
+                </div>
+                <div class="last-updated">Last updated: 2 minutes ago</div>
+            </div>
+
+            <!-- ESAT - Work Summaries Widget -->
+            <div class="widget">
+                <div class="widget-header">
+                    <div>
+                        <div class="widget-title">CSR Satisfaction - Work Summaries</div>
+                        <div class="widget-subtitle">eSAT scores and feedback analysis</div>
+                    </div>
+                </div>
+                
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="metric-value">91.2%</div>
+                        <div class="metric-label">Positive Feedback</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">8.8%</div>
+                        <div class="metric-label">Negative Feedback</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value">4.5</div>
+                        <div class="metric-label">Avg Rating</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="esatWorkSummariesChart"></canvas>
+                </div>
+                <div class="last-updated">Last updated: 2 minutes ago</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Chart.js configuration
+        Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        Chart.defaults.color = '#495057';
+
+        // Service Replies Usage Chart
+        const serviceRepliesCtx = document.getElementById('serviceRepliesChart').getContext('2d');
+        new Chart(serviceRepliesCtx, {
+            type: 'line',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [{
+                    label: 'Generated',
+                    data: [650, 720, 780, 847],
+                    borderColor: '#007BFF',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Sent by CSRs',
+                    data: [520, 580, 620, 714],
+                    borderColor: '#DC3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Work Summaries Usage Chart
+        const workSummariesCtx = document.getElementById('workSummariesChart').getContext('2d');
+        new Chart(workSummariesCtx, {
+            type: 'line',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [{
+                    label: 'Generated',
+                    data: [420, 480, 520, 503],
+                    borderColor: '#007BFF',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Saved by CSRs',
+                    data: [320, 380, 410, 346],
+                    borderColor: '#DC3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Service Replies Quality Chart
+        const serviceRepliesQualityCtx = document.getElementById('serviceRepliesQualityChart').getContext('2d');
+        new Chart(serviceRepliesQualityCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Sent As-Is', 'Modified', 'Overwritten'],
+                datasets: [{
+                    data: [45.2, 33.1, 21.7],
+                    backgroundColor: ['#007BFF', '#0000FF', '#DC3545'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+
+        // Work Summaries Quality Chart
+        const workSummariesQualityCtx = document.getElementById('workSummariesQualityChart').getContext('2d');
+        new Chart(workSummariesQualityCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Saved As-Is', 'Modified', 'Overwritten'],
+                datasets: [{
+                    data: [52.8, 28.4, 18.8],
+                    backgroundColor: ['#007BFF', '#0000FF', '#DC3545'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+
+        // AHT Service Replies Chart
+        const ahtServiceRepliesCtx = document.getElementById('ahtServiceRepliesChart').getContext('2d');
+        new Chart(ahtServiceRepliesCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [{
+                    label: 'With Service Replies',
+                    data: [4.5, 4.3, 4.1, 4.2],
+                    backgroundColor: '#007BFF',
+                    borderRadius: 4
+                }, {
+                    label: 'Without Service Replies',
+                    data: [6.9, 6.7, 6.8, 6.8],
+                    backgroundColor: '#495057',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Minutes'
+                        }
+                    }
+                }
+            }
+        });
+
+        // AHT Work Summaries Chart
+        const ahtWorkSummariesCtx = document.getElementById('ahtWorkSummariesChart').getContext('2d');
+        new Chart(ahtWorkSummariesCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [{
+                    label: 'With Work Summaries',
+                    data: [4.2, 4.0, 3.8, 3.9],
+                    backgroundColor: '#007BFF',
+                    borderRadius: 4
+                }, {
+                    label: 'Without Work Summaries',
+                    data: [6.4, 6.2, 6.1, 6.2],
+                    backgroundColor: '#495057',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Minutes'
+                        }
+                    }
+                }
+            }
+        });
+
+        // ESAT Service Replies Chart
+        const esatServiceRepliesCtx = document.getElementById('esatServiceRepliesChart').getContext('2d');
+        new Chart(esatServiceRepliesCtx, {
+            type: 'line',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [{
+                    label: 'eSAT Score',
+                    data: [4.0, 4.1, 4.2, 4.2],
+                    borderColor: '#007BFF',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 5,
+                        title: {
+                            display: true,
+                            text: 'Rating (1-5)'
+                        }
+                    }
+                }
+            }
+        });
+
+        // ESAT Work Summaries Chart
+        const esatWorkSummariesCtx = document.getElementById('esatWorkSummariesChart').getContext('2d');
+        new Chart(esatWorkSummariesCtx, {
+            type: 'line',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [{
+                    label: 'eSAT Score',
+                    data: [4.3, 4.4, 4.4, 4.5],
+                    borderColor: '#007BFF',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 5,
+                        title: {
+                            display: true,
+                            text: 'Rating (1-5)'
+                        }
+                    }
+                }
+            }
+        });
+
+        // Mock data arrays for export
+        const mockData = {
+            serviceRepliesUsage: [
+                { week: 'Week 1', generated: 650, sent: 520, adoptionRate: 80.0 },
+                { week: 'Week 2', generated: 720, sent: 580, adoptionRate: 80.6 },
+                { week: 'Week 3', generated: 780, sent: 620, adoptionRate: 79.5 },
+                { week: 'Week 4', generated: 847, sent: 714, adoptionRate: 84.3 }
+            ],
+            workSummariesUsage: [
+                { week: 'Week 1', generated: 420, saved: 320, adoptionRate: 76.2 },
+                { week: 'Week 2', generated: 480, saved: 380, adoptionRate: 79.2 },
+                { week: 'Week 3', generated: 520, saved: 410, adoptionRate: 78.8 },
+                { week: 'Week 4', generated: 503, saved: 346, adoptionRate: 68.8 }
+            ],
+            serviceRepliesQuality: [
+                { category: 'Sent As-Is', count: 1287, percentage: 45.2, trend: '+2.1%' },
+                { category: 'Modified', count: 943, percentage: 33.1, trend: '-1.3%' },
+                { category: 'Overwritten', count: 617, percentage: 21.7, trend: '-0.8%' }
+            ],
+            workSummariesQuality: [
+                { category: 'Saved As-Is', count: 1015, percentage: 52.8, trend: '+3.2%' },
+                { category: 'Modified', count: 546, percentage: 28.4, trend: '-1.1%' },
+                { category: 'Overwritten', count: 362, percentage: 18.8, trend: '-2.1%' }
+            ],
+            ahtServiceReplies: [
+                { week: 'Week 1', withProduct: 4.5, withoutProduct: 6.9, improvement: '-34.8%' },
+                { week: 'Week 2', withProduct: 4.3, withoutProduct: 6.7, improvement: '-35.8%' },
+                { week: 'Week 3', withProduct: 4.1, withoutProduct: 6.8, improvement: '-39.7%' },
+                { week: 'Week 4', withProduct: 4.2, withoutProduct: 6.8, improvement: '-38.2%' }
+            ],
+            ahtWorkSummaries: [
+                { week: 'Week 1', withProduct: 4.2, withoutProduct: 6.4, improvement: '-34.4%' },
+                { week: 'Week 2', withProduct: 4.0, withoutProduct: 6.2, improvement: '-35.5%' },
+                { week: 'Week 3', withProduct: 3.8, withoutProduct: 6.1, improvement: '-37.7%' },
+                { week: 'Week 4', withProduct: 3.9, withoutProduct: 6.2, improvement: '-37.1%' }
+            ],
+            esatServiceReplies: [
+                { week: 'Week 1', positiveFeedback: 85.2, negativeFeedback: 14.8, avgRating: 4.0, totalResponses: 156 },
+                { week: 'Week 2', positiveFeedback: 86.1, negativeFeedback: 13.9, avgRating: 4.1, totalResponses: 178 },
+                { week: 'Week 3', positiveFeedback: 87.5, negativeFeedback: 12.5, avgRating: 4.2, totalResponses: 192 },
+                { week: 'Week 4', positiveFeedback: 87.3, negativeFeedback: 12.7, avgRating: 4.2, totalResponses: 201 }
+            ],
+            esatWorkSummaries: [
+                { week: 'Week 1', positiveFeedback: 89.1, negativeFeedback: 10.9, avgRating: 4.3, totalResponses: 128 },
+                { week: 'Week 2', positiveFeedback: 90.2, negativeFeedback: 9.8, avgRating: 4.4, totalResponses: 145 },
+                { week: 'Week 3', positiveFeedback: 90.8, negativeFeedback: 9.2, avgRating: 4.4, totalResponses: 152 },
+                { week: 'Week 4', positiveFeedback: 91.2, negativeFeedback: 8.8, avgRating: 4.5, totalResponses: 158 }
+            ],
+            detailedUsageData: [
+                { objectName: 'Case-001', replies: 3, startTime: '2024-01-15 09:30:00', endTime: '2024-01-15 09:45:00', handleTime: 15, feedback: 'Positive', feedbackReason: 'Helpful response' },
+                { objectName: 'Case-002', replies: 2, startTime: '2024-01-15 10:15:00', endTime: '2024-01-15 10:28:00', handleTime: 13, feedback: 'Positive', feedbackReason: 'Accurate information' },
+                { objectName: 'Case-003', replies: 1, startTime: '2024-01-15 11:00:00', endTime: '2024-01-15 11:12:00', handleTime: 12, feedback: 'Negative', feedbackReason: 'Incomplete response' },
+                { objectName: 'Case-004', replies: 4, startTime: '2024-01-15 14:20:00', endTime: '2024-01-15 14:35:00', handleTime: 15, feedback: 'Positive', feedbackReason: 'Quick resolution' },
+                { objectName: 'Case-005', replies: 2, startTime: '2024-01-15 15:45:00', endTime: '2024-01-15 15:58:00', handleTime: 13, feedback: 'Positive', feedbackReason: 'Clear instructions' }
+            ],
+            detailedSummaryData: [
+                { crmRecordId: 'REC-001', objectName: 'Case-001', summaryType: 'Resolution', clicks: 2, savedNoUpdates: 1, wasUpdated: 1, notSaved: 0, startTime: '2024-01-15 09:30:00', endTime: '2024-01-15 09:45:00', handleTime: 15, feedback: 'Positive', feedbackReason: 'Comprehensive summary' },
+                { crmRecordId: 'REC-002', objectName: 'Case-002', summaryType: 'Follow-up', clicks: 1, savedNoUpdates: 0, wasUpdated: 1, notSaved: 0, startTime: '2024-01-15 10:15:00', endTime: '2024-01-15 10:28:00', handleTime: 13, feedback: 'Positive', feedbackReason: 'Accurate summary' },
+                { crmRecordId: 'REC-003', objectName: 'Case-003', summaryType: 'Resolution', clicks: 3, savedNoUpdates: 0, wasUpdated: 0, notSaved: 3, startTime: '2024-01-15 11:00:00', endTime: '2024-01-15 11:12:00', handleTime: 12, feedback: 'Negative', feedbackReason: 'Incomplete summary' },
+                { crmRecordId: 'REC-004', objectName: 'Case-004', summaryType: 'Action Items', clicks: 1, savedNoUpdates: 1, wasUpdated: 0, notSaved: 0, startTime: '2024-01-15 14:20:00', endTime: '2024-01-15 14:35:00', handleTime: 15, feedback: 'Positive', feedbackReason: 'Well organized' },
+                { crmRecordId: 'REC-005', objectName: 'Case-005', summaryType: 'Resolution', clicks: 2, savedNoUpdates: 0, wasUpdated: 1, notSaved: 1, startTime: '2024-01-15 15:45:00', endTime: '2024-01-15 15:58:00', handleTime: 13, feedback: 'Positive', feedbackReason: 'Clear action items' }
+            ]
+        };
+
+        // CSV export functionality
+        function convertToCSV(data, headers) {
+            const csvContent = [
+                headers.join(','),
+                ...data.map(row => 
+                    headers.map(header => {
+                        const value = row[header];
+                        // Escape commas and quotes in CSV
+                        if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+                            return `"${value.replace(/"/g, '""')}"`;
+                        }
+                        return value;
+                    }).join(',')
+                )
+            ].join('\n');
+            return csvContent;
+        }
+
+        function downloadCSV(csvContent, filename) {
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function exportData() {
+            const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            
+            // Export Service Replies Usage
+            const serviceRepliesHeaders = ['Week', 'Generated', 'Sent by CSRs', 'Adoption Rate (%)'];
+            const serviceRepliesCSV = convertToCSV(mockData.serviceRepliesUsage, serviceRepliesHeaders);
+            downloadCSV(serviceRepliesCSV, `service-replies-usage-${timestamp}.csv`);
+
+            // Export Work Summaries Usage
+            const workSummariesHeaders = ['Week', 'Generated', 'Saved by CSRs', 'Adoption Rate (%)'];
+            const workSummariesCSV = convertToCSV(mockData.workSummariesUsage, workSummariesHeaders);
+            downloadCSV(workSummariesCSV, `work-summaries-usage-${timestamp}.csv`);
+
+            // Export Service Replies Quality
+            const serviceRepliesQualityHeaders = ['Category', 'Count', 'Percentage (%)', 'Trend'];
+            const serviceRepliesQualityCSV = convertToCSV(mockData.serviceRepliesQuality, serviceRepliesQualityHeaders);
+            downloadCSV(serviceRepliesQualityCSV, `service-replies-quality-${timestamp}.csv`);
+
+            // Export Work Summaries Quality
+            const workSummariesQualityHeaders = ['Category', 'Count', 'Percentage (%)', 'Trend'];
+            const workSummariesQualityCSV = convertToCSV(mockData.workSummariesQuality, workSummariesQualityHeaders);
+            downloadCSV(workSummariesQualityCSV, `work-summaries-quality-${timestamp}.csv`);
+
+            // Export AHT Service Replies
+            const ahtServiceRepliesHeaders = ['Week', 'AHT with Service Replies (min)', 'AHT without Service Replies (min)', 'Improvement (%)'];
+            const ahtServiceRepliesCSV = convertToCSV(mockData.ahtServiceReplies, ahtServiceRepliesHeaders);
+            downloadCSV(ahtServiceRepliesCSV, `aht-service-replies-${timestamp}.csv`);
+
+            // Export AHT Work Summaries
+            const ahtWorkSummariesHeaders = ['Week', 'AHT with Work Summaries (min)', 'AHT without Work Summaries (min)', 'Improvement (%)'];
+            const ahtWorkSummariesCSV = convertToCSV(mockData.ahtWorkSummaries, ahtWorkSummariesHeaders);
+            downloadCSV(ahtWorkSummariesCSV, `aht-work-summaries-${timestamp}.csv`);
+
+            // Export ESAT Service Replies
+            const esatServiceRepliesHeaders = ['Week', 'Positive Feedback (%)', 'Negative Feedback (%)', 'Average Rating', 'Total Responses'];
+            const esatServiceRepliesCSV = convertToCSV(mockData.esatServiceReplies, esatServiceRepliesHeaders);
+            downloadCSV(esatServiceRepliesCSV, `esat-service-replies-${timestamp}.csv`);
+
+            // Export ESAT Work Summaries
+            const esatWorkSummariesHeaders = ['Week', 'Positive Feedback (%)', 'Negative Feedback (%)', 'Average Rating', 'Total Responses'];
+            const esatWorkSummariesCSV = convertToCSV(mockData.esatWorkSummaries, esatWorkSummariesHeaders);
+            downloadCSV(esatWorkSummariesCSV, `esat-work-summaries-${timestamp}.csv`);
+
+            // Export Detailed Service Replies Data
+            const detailedUsageHeaders = ['Object Name', 'Number of Replies', 'Start Time', 'End Time', 'Handle Time (min)', 'Feedback', 'Feedback Reason'];
+            const detailedUsageCSV = convertToCSV(mockData.detailedUsageData, detailedUsageHeaders);
+            downloadCSV(detailedUsageCSV, `detailed-service-replies-data-${timestamp}.csv`);
+
+            // Export Detailed Work Summaries Data
+            const detailedSummaryHeaders = ['CRM Record ID', 'Object Name', 'Summary Type', 'Number of Clicks', 'Saved with No Updates', 'Summary Was Updated', 'Summary Was Not Saved', 'Start Time', 'End Time', 'Handle Time (min)', 'Feedback', 'Feedback Reason'];
+            const detailedSummaryCSV = convertToCSV(mockData.detailedSummaryData, detailedSummaryHeaders);
+            downloadCSV(detailedSummaryCSV, `detailed-work-summaries-data-${timestamp}.csv`);
+
+            // Show success message
+            alert('All dashboard data has been exported as CSV files! Check your downloads folder.');
+        }
+
+        // Filter functionality
+        document.getElementById('timeRange').addEventListener('change', function() {
+            console.log('Time range changed to:', this.value);
+            // Here you would update the dashboard data based on the selected time range
+        });
+
+        document.getElementById('caseType').addEventListener('change', function() {
+            console.log('Case type changed to:', this.value);
+            // Here you would filter the dashboard data based on case type
+        });
+
+        document.getElementById('teamFilter').addEventListener('change', function() {
+            console.log('Team filter changed to:', this.value);
+            // Here you would filter the dashboard data based on team
+        });
+    </script>
+</body>
+</html>
